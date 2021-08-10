@@ -1,0 +1,11 @@
+# Specify filepatterns you want git to ignore.
+
+# フォルダの除外
+.vs
+.workspace
+.gradle
+bin
+obj
+Debug
+build
+jniLibs
