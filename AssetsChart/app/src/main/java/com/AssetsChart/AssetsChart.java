@@ -15,6 +15,7 @@ import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.utils.ColorTemplate;
+import com.github.mikephil.charting.highlight.ChartHighlighter;
 import com.github.mikephil.charting.formatter.*;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.BarEntry;
@@ -34,7 +35,15 @@ import android.view.View;
 public class AssetsChart extends Activity 
 {
     /** アクティビティが最初に作成されるときに呼び出されます。 */
+    private static final boolean DEBUG = true;
+
     DateManager dateManager = new DateManager();
+    boolean check_visible_total = true;
+    boolean check_visible_cash = true;
+    boolean check_visible_stock = true;
+    boolean check_visible_invest = true;
+    boolean check_visible_points = true;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -61,8 +70,94 @@ public class AssetsChart extends Activity
                 ChartDisp(getApplicationContext());
             }
         });
+    }
 
+    @Override
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+       getMenuInflater().inflate(R.menu.main, menu);
 
+       android.view.MenuItem item;
+       item = menu.findItem(R.id.visible_total);
+       item.setChecked(check_visible_total);
+       item = menu.findItem(R.id.visible_cash);
+       item.setChecked(check_visible_cash);
+       item = menu.findItem(R.id.visible_stocks);
+       item.setChecked(check_visible_stock);
+       item = menu.findItem(R.id.visible_invest);
+       item.setChecked(check_visible_invest);
+       item = menu.findItem(R.id.visible_points);
+       item.setChecked(check_visible_points);
+
+       return true;
+    }
+
+    static String menu_tag = "MainMenu";
+
+    @Override
+    public boolean onOptionsItemSelected(android.view.MenuItem item) {
+        switch(item.getItemId()){
+        case R.id.visible_total:
+            check_visible_total = !item.isChecked();
+            item.setChecked(check_visible_total);
+            ChartDisp(getApplicationContext());
+            return true;
+        case R.id.visible_cash:
+            check_visible_cash = !item.isChecked();
+            item.setChecked(check_visible_cash);
+            ChartDisp(getApplicationContext());
+            return true;
+        case R.id.visible_stocks:
+            check_visible_stock = !item.isChecked();
+            item.setChecked(check_visible_stock);
+            ChartDisp(getApplicationContext());
+            return true;
+        case R.id.visible_invest:
+            check_visible_invest = !item.isChecked();
+            item.setChecked(check_visible_invest);
+            ChartDisp(getApplicationContext());
+            return true;
+        case R.id.visible_points:
+            check_visible_points = !item.isChecked();
+            item.setChecked(check_visible_points);
+            ChartDisp(getApplicationContext());
+            return true;
+        case R.id.openMF:
+            Uri uri = Uri.parse("https://moneyforward.com/bs/history/");
+            android.content.Intent intentweb = new Intent(Intent.ACTION_VIEW, uri);
+            startActivity(intentweb);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // File load
+        if (requestCode == 1001) {
+            if (resultCode == RESULT_OK && data != null) {
+                Uri uri = data.getData();
+                if (uri != null) {
+                    try
+                    {
+                        if(DEBUG){
+                            String debugtxtpath = getExternalFilesDir(null) + "/SelectFileName.txt";
+                            java.io.File debugtxt = new java.io.File(debugtxtpath);
+                            java.io.FileWriter fileWriter = new java.io.FileWriter(debugtxt, false);
+                            java.io.BufferedWriter bufferedWriter  = new java.io.BufferedWriter(fileWriter);
+                            bufferedWriter.append("select fileName:"+uri);
+                            bufferedWriter.newLine();
+                            bufferedWriter.close();
+                        }
+                    } catch (java.io.FileNotFoundException e) {
+            	        e.printStackTrace();
+                    } catch (java.io.IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
     }
 
     public void ChartDisp(Context context)
@@ -74,18 +169,19 @@ public class AssetsChart extends Activity
         Chart.setDrawGridBackground(false);
         Chart.setEnabled(true);
         Chart.setTouchEnabled(true);
-        Chart.setPinchZoom(true);
-        Chart.setDoubleTapToZoomEnabled(true);
+        Chart.setPinchZoom(false);
+        Chart.setDoubleTapToZoomEnabled(false);
         Chart.setBackgroundColor(Color.TRANSPARENT);
-        Chart.setScaleEnabled(true);
+        Chart.setScaleEnabled(false);
         Chart.getLegend().setEnabled(true);
+        Chart.getDescription().setEnabled(false);
 
         //X軸周り
         XAxis xAxis = Chart.getXAxis();
         xAxis.setDrawLabels(true);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setDrawGridLines(true);
-
+        xAxis.setDrawGridLines(false);
+        
         ArrayList<Entry> values_total = new ArrayList<Entry>();
         ArrayList<Entry> values_cash = new ArrayList<Entry>();
         ArrayList<Entry> values_stocks = new ArrayList<Entry>();
@@ -95,7 +191,9 @@ public class AssetsChart extends Activity
         AssetsChart.CsvRead readData = new AssetsChart.CsvRead();
         readData.reader(context);
 
-        if(readData.readOk == true)
+        boolean visible_select = check_visible_total || check_visible_cash || check_visible_stock || check_visible_invest || check_visible_points;
+
+        if(readData.readOk && visible_select)
         {
             for(int i=0;i<readData.assetList.size();i++)
             {
@@ -109,38 +207,63 @@ public class AssetsChart extends Activity
             xAxis.setValueFormatter(indexFormatter);
 
             ListTitleData legend = new ListTitleData();
+            LineData lineData = new LineData();
 
             LineDataSet values_totalDataSet = new LineDataSet(values_total, legend.legend_total);
-            values_totalDataSet.setColor(ColorTemplate.COLORFUL_COLORS[0]);
-            values_totalDataSet.setLineWidth(2);
-            values_totalDataSet.setDrawCircles(false);
- 
-            LineDataSet values_cashDataSet = new LineDataSet(values_cash, legend.legend_cash);
-            values_cashDataSet.setColor(ColorTemplate.COLORFUL_COLORS[1]);
-            values_cashDataSet.setLineWidth(2);
-            values_cashDataSet.setDrawCircles(false);
- 
-            LineDataSet values_stocksDataSet = new LineDataSet(values_stocks, legend.legend_stocks);
-            values_stocksDataSet.setColor(ColorTemplate.COLORFUL_COLORS[2]);
-            values_stocksDataSet.setLineWidth(2);
-            values_stocksDataSet.setDrawCircles(false);
- 
-            LineDataSet values_investDataSet = new LineDataSet(values_invest, legend.legend_invest);
-            values_investDataSet.setColor(ColorTemplate.COLORFUL_COLORS[3]);
-            values_investDataSet.setLineWidth(2);
-            values_investDataSet.setDrawCircles(false);
- 
-            LineDataSet values_pointsDataSet = new LineDataSet(values_points, legend.legend_points);
-            values_pointsDataSet.setColor(ColorTemplate.COLORFUL_COLORS[4]);
-            values_pointsDataSet.setLineWidth(2);
-            values_pointsDataSet.setDrawCircles(false);
+            if(check_visible_total)
+            {
+                values_totalDataSet.setColor(ColorTemplate.COLORFUL_COLORS[0]);
+                values_totalDataSet.setLineWidth(2);
+                values_totalDataSet.setDrawCircles(false);
+                values_totalDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
 
-            LineData lineData = new LineData();
-            lineData.addDataSet(values_totalDataSet);
-            lineData.addDataSet(values_cashDataSet);
-            lineData.addDataSet(values_stocksDataSet);
-            lineData.addDataSet(values_investDataSet);
-            lineData.addDataSet(values_pointsDataSet);
+                lineData.addDataSet(values_totalDataSet);
+            }
+
+            LineDataSet values_cashDataSet = new LineDataSet(values_cash, legend.legend_cash);
+            if(check_visible_cash)
+            {
+                values_cashDataSet.setColor(ColorTemplate.COLORFUL_COLORS[1]);
+                values_cashDataSet.setLineWidth(2);
+                values_cashDataSet.setDrawCircles(false);
+                values_cashDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+
+                lineData.addDataSet(values_cashDataSet);
+            }
+
+            LineDataSet values_stocksDataSet = new LineDataSet(values_stocks, legend.legend_stocks);
+            if(check_visible_stock)
+            {
+                values_stocksDataSet.setColor(ColorTemplate.COLORFUL_COLORS[2]);
+                values_stocksDataSet.setLineWidth(2);
+                values_stocksDataSet.setDrawCircles(false);
+                values_stocksDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+
+                lineData.addDataSet(values_stocksDataSet);
+            }
+
+            LineDataSet values_investDataSet = new LineDataSet(values_invest, legend.legend_invest);
+            if(check_visible_invest)
+            {
+                values_investDataSet.setColor(ColorTemplate.COLORFUL_COLORS[3]);
+                values_investDataSet.setLineWidth(2);
+                values_investDataSet.setDrawCircles(false);
+                values_investDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+
+                lineData.addDataSet(values_investDataSet);
+            }
+
+            LineDataSet values_pointsDataSet = new LineDataSet(values_points, legend.legend_points);
+            if(check_visible_points)
+            {
+                values_pointsDataSet.setColor(ColorTemplate.COLORFUL_COLORS[4]);
+                values_pointsDataSet.setLineWidth(2);
+                values_pointsDataSet.setDrawCircles(false);
+                values_pointsDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+
+                lineData.addDataSet(values_pointsDataSet);
+            }
+
             Chart.setData(lineData);
 
         }
@@ -252,7 +375,7 @@ public class AssetsChart extends Activity
             String fileName = getExternalFilesDir(null) + "/資産推移_" + Integer.toString(dateManager.yyyy) + "-" + month0 + Integer.toString(dateManager.mm) + ".csv";
             try
             {
-                {
+                if(DEBUG){
                     String debugtxtpath = getExternalFilesDir(null) + "/OpenLastFileName.txt";
                     java.io.File debugtxt = new java.io.File(debugtxtpath);
                     java.io.FileWriter fileWriter = new java.io.FileWriter(debugtxt, false);
@@ -269,6 +392,7 @@ public class AssetsChart extends Activity
                 int i = 0;
                 String line_org;
                 while ((line_org = bufferReader.readLine()) != null) {
+                    // 読み処理
                 	if( i != 0 )
                 	{
                         AssetListData data = new AssetListData();
