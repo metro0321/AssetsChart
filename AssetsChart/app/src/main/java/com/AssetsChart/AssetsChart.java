@@ -15,7 +15,7 @@ import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.utils.ColorTemplate;
-import com.github.mikephil.charting.highlight.ChartHighlighter;
+import com.github.mikephil.charting.highlight.*;
 import com.github.mikephil.charting.formatter.*;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.BarEntry;
@@ -25,6 +25,7 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.animation.Easing;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.listener.*;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -43,13 +44,14 @@ public class AssetsChart extends Activity
     boolean check_visible_stock = true;
     boolean check_visible_invest = true;
     boolean check_visible_points = true;
-
+    LineChart Chart;
 
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.assets_chart);
+        Chart = (LineChart) findViewById(R.id.lineChart);
 
         dateManager.getNowYearMonth();
         dateManager.setYearMonth(dateManager.yyyy, dateManager.mm);
@@ -151,7 +153,7 @@ public class AssetsChart extends Activity
                             bufferedWriter.close();
                         }
                     } catch (java.io.FileNotFoundException e) {
-            	        e.printStackTrace();
+                        e.printStackTrace();
                     } catch (java.io.IOException e) {
                         e.printStackTrace();
                     }
@@ -162,7 +164,6 @@ public class AssetsChart extends Activity
 
     public void ChartDisp(Context context)
     {
-        LineChart Chart = (LineChart) findViewById(R.id.lineChart);
 
         Chart.getAxisRight().setEnabled(false);
         Chart.getAxisLeft().setEnabled(true);
@@ -260,12 +261,14 @@ public class AssetsChart extends Activity
                 values_pointsDataSet.setLineWidth(2);
                 values_pointsDataSet.setDrawCircles(false);
                 values_pointsDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-
                 lineData.addDataSet(values_pointsDataSet);
             }
 
-            Chart.setData(lineData);
+            lineData.setDrawValues(false);
 
+            Chart.setData(lineData);
+            com.github.mikephil.charting.components.IMarker marker = new CustomMarkerView(context, R.layout.marker_view);
+            Chart.setMarkerView(marker);
         }
         else
         {
@@ -273,6 +276,38 @@ public class AssetsChart extends Activity
         }
 
         Chart.invalidate();
+    }
+
+    public class CustomMarkerView extends com.github.mikephil.charting.components.MarkerView
+    {
+        private TextView tvContent;
+
+        public CustomMarkerView (Context context, int layoutResource) {
+            super(context, layoutResource);
+            // this markerview only displays a textview
+            tvContent = (TextView) findViewById(R.id.marker_view);
+        }
+
+        // callbacks everytime the MarkerView is redrawn, can be used to update the
+        // content (user-interface)
+        @Override
+        public void refreshContent(Entry e, Highlight highlight) {
+            int day = (int)e.getX()+1;
+            int value = (int)e.getY();
+            tvContent.setText(day + "日\r\n" + value + "円"); // set the entry-value as the display text
+            // this will perform necessary layouting
+            super.refreshContent(e, highlight);
+        }
+
+        private com.github.mikephil.charting.utils.MPPointF mOffset; 
+        @Override
+        public com.github.mikephil.charting.utils.MPPointF getOffset() {
+            if(mOffset == null) {
+               // center the marker horizontally and vertically
+               mOffset = new com.github.mikephil.charting.utils.MPPointF(-(getWidth() / 2), -getHeight()-5);
+            }
+            return mOffset;
+        }
     }
 
     public class DateManager
@@ -425,3 +460,4 @@ public class AssetsChart extends Activity
          }
     }
 }
+
