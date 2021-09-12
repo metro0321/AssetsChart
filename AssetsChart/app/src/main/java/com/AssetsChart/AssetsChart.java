@@ -164,6 +164,7 @@ public class AssetsChart extends Activity
 
     public void ChartDisp(Context context)
     {
+        Chart.highlightValue(null);
 
         Chart.getAxisRight().setEnabled(false);
         Chart.getAxisLeft().setEnabled(true);
@@ -216,7 +217,7 @@ public class AssetsChart extends Activity
                 values_totalDataSet.setColor(ColorTemplate.COLORFUL_COLORS[0]);
                 values_totalDataSet.setLineWidth(2);
                 values_totalDataSet.setDrawCircles(false);
-                values_totalDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+                values_totalDataSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
 
                 lineData.addDataSet(values_totalDataSet);
             }
@@ -227,7 +228,7 @@ public class AssetsChart extends Activity
                 values_cashDataSet.setColor(ColorTemplate.COLORFUL_COLORS[1]);
                 values_cashDataSet.setLineWidth(2);
                 values_cashDataSet.setDrawCircles(false);
-                values_cashDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+                values_cashDataSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
 
                 lineData.addDataSet(values_cashDataSet);
             }
@@ -238,7 +239,7 @@ public class AssetsChart extends Activity
                 values_stocksDataSet.setColor(ColorTemplate.COLORFUL_COLORS[2]);
                 values_stocksDataSet.setLineWidth(2);
                 values_stocksDataSet.setDrawCircles(false);
-                values_stocksDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+                values_stocksDataSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
 
                 lineData.addDataSet(values_stocksDataSet);
             }
@@ -249,7 +250,7 @@ public class AssetsChart extends Activity
                 values_investDataSet.setColor(ColorTemplate.COLORFUL_COLORS[3]);
                 values_investDataSet.setLineWidth(2);
                 values_investDataSet.setDrawCircles(false);
-                values_investDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+                values_investDataSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
 
                 lineData.addDataSet(values_investDataSet);
             }
@@ -260,15 +261,14 @@ public class AssetsChart extends Activity
                 values_pointsDataSet.setColor(ColorTemplate.COLORFUL_COLORS[4]);
                 values_pointsDataSet.setLineWidth(2);
                 values_pointsDataSet.setDrawCircles(false);
-                values_pointsDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+                values_pointsDataSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
                 lineData.addDataSet(values_pointsDataSet);
             }
 
             lineData.setDrawValues(false);
 
             Chart.setData(lineData);
-            com.github.mikephil.charting.components.IMarker marker = new CustomMarkerView(context, R.layout.marker_view);
-            Chart.setMarkerView(marker);
+            Chart.setMarkerView(new CustomMarkerView(context, R.layout.marker_view));
         }
         else
         {
@@ -434,6 +434,9 @@ public class AssetsChart extends Activity
                         String line = line_org.replace("\"","");
                         String[] RowData = line.split(",");
                         String[] yyyymmdd = RowData[0].split("/");
+                        if(yyyymmdd[2].charAt(0) == '0') {
+                            yyyymmdd[2] = yyyymmdd[2].replaceFirst("0","");
+                        }
                         data.setDate(yyyymmdd[2]);
                         data.setTotal(Integer.valueOf(RowData[1]));
                         data.setCash(Integer.valueOf(RowData[2]));
