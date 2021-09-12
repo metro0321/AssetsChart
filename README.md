@@ -4,7 +4,7 @@
 
 マネーフォワードからダウンロードした資産推移_YYYYMM月.csvをAndroid端末の
 
-> storage/emulated/0/Android/data/com.AssetsChart 
+> storage/emulated/0/Android/data/com.AssetsChart/files
 
 に置くとその月のグラフを表示する。
 
