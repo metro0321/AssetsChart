@@ -39,6 +39,7 @@ public class AssetsChart extends Activity
     private static final boolean DEBUG = true;
 
     DateManager dateManager = new DateManager();
+    boolean year_mode = false;
     boolean check_visible_total = true;
     boolean check_visible_cash = true;
     boolean check_visible_stock = true;
@@ -128,6 +129,19 @@ public class AssetsChart extends Activity
             android.content.Intent intentweb = new Intent(Intent.ACTION_VIEW, uri);
             startActivity(intentweb);
             return true;
+        case R.id.YearMode:
+            year_mode = !item.isChecked();
+            item.setChecked(year_mode);
+            if(year_mode) {
+                item.setTitle("年");
+            }else{
+                item.setTitle("月");
+            }
+            dateManager.setYearMonth(dateManager.yyyy,dateManager.mm);
+            ((TextView) findViewById(R.id.next_month)).setText("次の年");
+            ((TextView) findViewById(R.id.previous_month)).setText("前の年");
+            ChartDisp(getApplicationContext());
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -191,7 +205,12 @@ public class AssetsChart extends Activity
         ArrayList<Entry> values_points = new ArrayList<Entry>();
 
         AssetsChart.CsvRead readData = new AssetsChart.CsvRead();
-        readData.reader(context);
+
+        if(year_mode) {
+            readData.readerYearMode(context);
+        } else {
+            readData.reader(context);
+        }
 
         boolean visible_select = check_visible_total || check_visible_cash || check_visible_stock || check_visible_invest || check_visible_points;
 
@@ -325,27 +344,43 @@ public class AssetsChart extends Activity
         public void setYearMonth(int in_yyyy, int in_mm) {
             yyyy = in_yyyy;
             mm = in_mm;
-            ((TextView) findViewById(R.id.header_month_text)).setText(Integer.toString(yyyy)+"年"+Integer.toString(mm)+"月");
+            if(year_mode) {
+                ((TextView) findViewById(R.id.header_month_text)).setText(Integer.toString(yyyy)+"年");
+            }else{
+                ((TextView) findViewById(R.id.header_month_text)).setText(Integer.toString(yyyy)+"年"+Integer.toString(mm)+"月");
+            }
         }
 
         public void setPrevMonth() {
-            mm--;
-            if(mm < 1)
-            {
-                mm = 12;
+            if(year_mode) {
+                mm = 1;
                 yyyy--;
+                ((TextView) findViewById(R.id.header_month_text)).setText(Integer.toString(yyyy)+"年");
+            }else{
+                mm--;
+                if(mm < 1)
+                {
+                    mm = 12;
+                    yyyy--;
+                }
+                ((TextView) findViewById(R.id.header_month_text)).setText(Integer.toString(yyyy)+"年"+Integer.toString(mm)+"月");
             }
-            ((TextView) findViewById(R.id.header_month_text)).setText(Integer.toString(yyyy)+"年"+Integer.toString(mm)+"月");
         }
 
         public void setNextMonth() {
-            mm++;
-            if(12 < mm)
-            {
+            if(year_mode) {
                 mm = 1;
                 yyyy++;
+                ((TextView) findViewById(R.id.header_month_text)).setText(Integer.toString(yyyy)+"年");
+            }else{
+                mm++;
+                if(12 < mm)
+                {
+                    mm = 1;
+                    yyyy++;
+                }
+                ((TextView) findViewById(R.id.header_month_text)).setText(Integer.toString(yyyy)+"年"+Integer.toString(mm)+"月");
             }
-            ((TextView) findViewById(R.id.header_month_text)).setText(Integer.toString(yyyy)+"年"+Integer.toString(mm)+"月");
         }
     }
 
@@ -401,7 +436,6 @@ public class AssetsChart extends Activity
                 return label;
             }
 
-
          public void reader(Context context) {
             String month0 = "";
             if(1 <= dateManager.mm && dateManager.mm <= 9 ){ 
@@ -437,7 +471,7 @@ public class AssetsChart extends Activity
                         if(yyyymmdd[2].charAt(0) == '0') {
                             yyyymmdd[2] = yyyymmdd[2].replaceFirst("0","");
                         }
-                        data.setDate(yyyymmdd[2]);
+                        data.setDate(yyyymmdd[2] + "日");                    
                         data.setTotal(Integer.valueOf(RowData[1]));
                         data.setCash(Integer.valueOf(RowData[2]));
                         data.setStocks(Integer.valueOf(RowData[3]));
@@ -461,6 +495,59 @@ public class AssetsChart extends Activity
                     return;
             }
          }
+
+         public void readerYearMode(Context context) {
+
+        	String month_list[] = {"01","02","03","04","05","06","07","08","09","10","11","12"};
+
+            for(String mm : month_list)
+            {
+                try
+                {
+                    String fileName = getExternalFilesDir(null) + "/資産推移_" + Integer.toString(dateManager.yyyy) + "-" + mm + ".csv";
+                    java.io.FileInputStream inputStream = new java.io.FileInputStream(new java.io.File(fileName));
+                    java.io.InputStreamReader inputStreamReader = new java.io.InputStreamReader(inputStream);
+                    java.io.BufferedReader bufferReader = new java.io.BufferedReader(inputStreamReader);
+
+                    int i = 0;
+                    String line_org;
+                    while ((line_org = bufferReader.readLine()) != null) {
+                        // 読み処理
+                	    if( i != 0 )
+                	    {
+                            AssetListData data = new AssetListData();
+                            String line = line_org.replace("\"","");
+                            String[] RowData = line.split(",");
+                            String[] yyyymmdd = RowData[0].split("/");
+                            if(yyyymmdd[2].charAt(0) == '0') {
+                                yyyymmdd[2] = yyyymmdd[2].replaceFirst("0","");
+                            }
+                            data.setDate(yyyymmdd[1] + "月");
+                            data.setTotal(Integer.valueOf(RowData[1]));
+                            data.setCash(Integer.valueOf(RowData[2]));
+                            data.setStocks(Integer.valueOf(RowData[3]));
+                            data.setInvest(Integer.valueOf(RowData[4]));
+                            data.setPoints(Integer.valueOf(RowData[5]));
+                    
+                            assetList.add(data);
+                	    }
+                        i++;
+                    }
+                    readOk = true;
+                    bufferReader.close();
+                } catch (java.io.FileNotFoundException e) {
+            	    e.printStackTrace();
+                    readOk = false;
+                } catch (java.io.IOException e) {
+                    readOk = false;
+                    e.printStackTrace();
+                } finally {
+                    if(readOk == false)
+                        return;
+                }
+            }
+         }
+    
     }
 }
 
